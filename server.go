@@ -270,16 +270,16 @@ func (s *Server) checkAndAssign(next jmessages) tasks {
 		}
 		if req.err != nil {
 			t.err = req.err // deferred validation error
-		} else if id := string(fid); id != "" && s.used[id] != nil {
-			t.err = Errorf(code.InvalidRequest, "duplicate request id %q", id)
-		} else if !s.versionOK(req.V) {
-			t.err = ErrInvalidVersion
-		} else if !req.isRequestOrNotification() && s.call[id] != nil {
+		} else if id := string(fid); !req.isRequestOrNotification() && s.call[id] != nil {
 			// This is a result or error for a pending push-call.
 			rsp := s.call[id]
 			delete(s.call, id)
 			rsp.ch <- req
 			continue // don't send a reply for this
+		} else if id != "" && s.used[id] != nil {
+			t.err = Errorf(code.InvalidRequest, "duplicate request id %q", id)
+		} else if !s.versionOK(req.V) {
+			t.err = ErrInvalidVersion
 		} else if req.M == "" {
 			t.err = Errorf(code.InvalidRequest, "empty method name")
 		} else if s.setContext(t, id) {
